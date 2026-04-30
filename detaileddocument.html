@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文件详情</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/gh/annacom155/ccouo/json/js/qr.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; }
+        body { background: #f8f9fa; padding: 20px; min-height: 100vh; color: #2c3e50; }
+        .container { max-width: 1000px; margin: 30px auto; background: white; padding: 40px; border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.05); border: 1px solid #eaeaea; }
+        h1 { color: #111; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid #eee; font-weight: 500; display: flex; align-items: center; gap: 12px; }
+        h1 i { color: #111; }
+        .file-info { background: #f9f9f9; padding: 20px; border-radius: 8px; margin-bottom: 30px; border: 1px solid #eee; }
+        .info-item { margin-bottom: 15px; padding: 15px; background: white; border-left: 3px solid #111; border-radius: 6px; }
+        .info-label { font-weight: 500; color: #111; margin-bottom: 5px; font-size: 13px; display: flex; align-items: center; gap: 6px; }
+        .info-value { color: #333; font-size: 15px; word-break: break-all; line-height: 1.5; }
+        .preview-section { background: #f9f9f9; padding: 20px; border-radius: 8px; margin-bottom: 30px; border: 1px solid #eee; }
+        .preview-section h3 { color: #111; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #eee; font-weight: 500; display: flex; align-items: center; gap: 10px; }
+        .preview-container { display: flex; justify-content: center; align-items: center; padding: 20px; background: white; border-radius: 6px; min-height: 200px; }
+        .preview-image { max-width: 100%; max-height: 500px; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+        .preview-video { max-width: 100%; max-height: 500px; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+        .preview-audio { width: 100%; max-width: 500px; }
+        .paths-section { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 30px; }
+        @media (max-width: 768px) { .paths-section { grid-template-columns: 1fr; } }
+        .path-box, .qrcode-box { background: #f9f9f9; padding: 20px; border-radius: 8px; border: 1px solid #eee; }
+        .path-box h3, .qrcode-box h3 { color: #111; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #eee; font-weight: 500; display: flex; align-items: center; gap: 10px; }
+        .path-item { background: #f5f5f5; color: #111; padding: 12px 15px; margin-bottom: 12px; border-radius: 6px; font-family: 'Consolas', 'Monaco', 'Courier New', monospace; font-size: 13px; word-break: break-all; border: 1px solid #e0e0e0; }
+        .url-box { background: #f5f5f5; padding: 15px; border-radius: 6px; margin-top: 20px; border-left: 3px solid #111; }
+        .url-label { font-weight: 500; color: #111; margin-bottom: 8px; font-size: 13px; display: flex; align-items: center; gap: 6px; }
+        .url-value { font-family: 'Consolas', 'Monaco', 'Courier New', monospace; background: white; padding: 12px; border-radius: 6px; word-break: break-all; font-size: 13px; line-height: 1.5; border: 1px solid #e0e0e0; }
+        
+        /* 节点选择样式 */
+        .url-options { margin-top: 20px; }
+        .url-option { display: flex; align-items: center; padding: 10px; margin-bottom: 8px; background: white; border: 2px solid #e0e0e0; border-radius: 6px; cursor: pointer; transition: all 0.2s; }
+        .url-option:hover { border-color: #ccc; }
+        .url-option.selected { border-color: #111; background-color: #f9f9f9; }
+        .url-option input { margin-right: 10px; }
+        .url-info { flex: 1; }
+        .url-location { font-weight: 500; color: #111; font-size: 13px; }
+        .url-address { color: #666; font-size: 12px; margin-top: 2px; word-break: break-all; }
+        .speed-test { margin-top: 5px; font-size: 12px; }
+        .speed-test.running { color: #666; }
+        .speed-test.fast { color: #2ecc71; }
+        .speed-test.medium { color: #f39c12; }
+        .speed-test.slow { color: #e74c3c; }
+        .speed-test i { margin-right: 4px; }
+        
+        .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; }
+        .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 20px; background: #111; color: white; text-decoration: none; border-radius: 6px; border: none; cursor: pointer; font-weight: 500; font-size: 14px; transition: all 0.2s; }
+        .btn:hover { background: #333; transform: translateY(-2px); }
+        .btn-secondary { background: #666; }
+        .btn-secondary:hover { background: #555; }
+        .btn-success { background: #444; }
+        .btn-success:hover { background: #333; }
+        .btn-info { background: #555; }
+        .btn-info:hover { background: #444; }
+        .btn-warning { background: #e74c3c; }
+        .btn-warning:hover { background: #c0392b; }
+        .qrcode-container { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; background: white; border-radius: 6px; margin-top: 10px; border: 1px solid #eee; }
+        #qrcode { width: 200px; height: 200px; margin-bottom: 15px; display: flex; align-items: center; justify-content: center; }
+        .qrcode-label { font-size: 13px; color: #666; text-align: center; margin-top: 10px; }
+        .copy-notification { position: fixed; bottom: 20px; right: 20px; background: #111; color: white; padding: 12px 20px; border-radius: 6px; display: flex; align-items: center; gap: 8px; z-index: 1000; opacity: 0; transform: translateY(20px); transition: all 0.3s; }
+        .copy-notification.show { opacity: 1; transform: translateY(0); }
+        .file-icon { font-size: 20px; color: #111; margin-right: 6px; }
+        .empty-state { text-align: center; padding: 30px 20px; color: #888; }
+        .empty-state i { font-size: 40px; margin-bottom: 15px; color: #ddd; }
+        .qr-canvas { max-width: 100%; height: auto; }
+        .unsupported-preview { text-align: center; padding: 30px 20px; color: #666; }
+        .unsupported-preview i { font-size: 40px; margin-bottom: 15px; color: #ccc; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1><i class="fas fa-file-alt"></i> 文件详情</h1>
+        
+        <div class="file-info">
+            <div class="info-item">
+                <div class="info-label"><i class="fas fa-file"></i> 文件名</div>
+                <div class="info-value" id="fileName">正在加载...</div>
+            </div>
+            
+            <div class="info-item">
+                <div class="info-label"><i class="fas fa-folder"></i> 文件路径</div>
+                <div class="info-value" id="filePath">正在加载...</div>
+            </div>
+        </div>
+        
+        <div id="previewArea"></div>
+        
+        <div class="paths-section">
+            <div class="path-box">
+                <h3><i class="fas fa-link"></i> 链接信息</h3>
+                <div class="info-label">完整路径：</div>
+                <div class="path-item" id="fullPath">正在计算路径...</div>
+                
+                <div class="info-label">GitHub Raw 链接：</div>
+                <div class="path-item" id="githubPath">正在生成链接...</div>
+                
+                <div class="info-label" style="margin-top: 20px;"><i class="fas fa-server"></i> 节点链接</div>
+                <div class="path-item" id="hkNodeUrl">正在生成美国节点链接...</div>
+                <div class="path-item" id="usNodeUrl">正在生成香港节点链接...</div>
+            </div>
+            
+            <div class="qrcode-box">
+                <h3><i class="fas fa-qrcode"></i> 二维码</h3>
+                
+                <!-- 节点选择区域 -->
+                <div class="url-options">
+                    <div class="info-label"><i class="fas fa-rocket"></i> 选择节点生成二维码（点击测速）</div>
+                    <div id="urlOptions"></div>
+                </div>
+                
+                <!-- 选中的链接显示 -->
+                <div class="url-box" id="selectedUrlBox" style="display: none;">
+                    <div class="url-label"><i class="fas fa-check-circle"></i> 当前选中节点</div>
+                    <div class="url-value" id="selectedUrlValue">未选择</div>
+                </div>
+                
+                <!-- 二维码显示区域 -->
+                <div class="qrcode-container">
+                    <div id="qrcode"></div>
+                    <div class="qrcode-label" id="qrcodeLabel">请选择一个节点生成二维码</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="actions">
+            <button onclick="generateSelectedQRCode()" class="btn btn-success">
+                <i class="fas fa-qrcode"></i> 生成二维码
+            </button>
+            <button onclick="startSpeedTestAll()" class="btn btn-info">
+                <i class="fas fa-tachometer-alt"></i> 开始测速
+            </button>
+            <button onclick="copySelectedUrl()" class="btn">
+                <i class="fas fa-copy"></i> 复制选中链接
+            </button>
+            <button onclick="copyGitHubUrl()" class="btn">
+                <i class="fas fa-copy"></i> 复制GitHub链接
+            </button>
+            <button onclick="downloadQRCode()" class="btn btn-secondary">
+                <i class="fas fa-download"></i> 下载二维码
+            </button>
+            <a href="github_admim.php" class="btn btn-warning">
+                <i class="fas fa-arrow-left"></i> 返回
+            </a>
+        </div>
+    </div>
+
+    <div id="copyNotification" class="copy-notification">
+        <i class="fas fa-check-circle"></i>
+        <span id="notificationText">链接已复制到剪贴板！</span>
+    </div>
+
+    <script>
+        // 三个链接配置
+        const urlConfigs = [
+            {
+                id: 'github',
+                name: 'GitHub Raw',
+                location: 'GitHub',
+                icon: 'fab fa-github',
+                generateUrl: (file, path) => {
+                    const filePath = path ? `${path}/${file}` : file;
+                    return `https://raw.githubusercontent.com/annacom155/ccouo/main/${filePath}`;
+                }
+            },
+            {
+                id: 'hk',
+                name: '美国节点',
+                location: '美国',
+                icon: 'fas fa-server',
+                generateUrl: (file, path) => {
+                    const filePath = path ? `${path}/${file}` : file;
+                    return `https://www.yuzusoft.pw/api/url.js?file=${encodeURIComponent(filePath)}`;
+                }
+            },
+            {
+                id: 'us',
+                name: '香港节点',
+                location: '香港',
+                icon: 'fas fa-globe-americas',
+                generateUrl: (file, path) => {
+                    const filePath = path ? `${path}/${file}` : file;
+                    return `https://ccouo.cn/wwwcn/kpi/file.php?file=${encodeURIComponent(filePath)}`;
+                }
+            }
+        ];
+        
+        let selectedUrlId = 'github'; // 默认选择GitHub节点
+        let speedResults = {}; // 存储测速结果
+        let currentFile = '';
+        let currentPath = '';
+
+        function getUrlParams() {
+            const params = new URLSearchParams(window.location.search);
+            return {
+                file: params.get('file') || '',
+                path: params.get('path') || ''
+            };
+        }
+        
+        // 获取预览链接（使用美国节点）
+        function getProxyUrl(file, path) {
+            const filePath = path ? `${path}/${file}` : file;
+            return `https://ccouo.cn/wwwcn/kpi/file.php?file=${encodeURIComponent(filePath)}`;
+        }
+        
+        // 渲染节点选择选项
+        function renderUrlOptions(file, path) {
+            const container = document.getElementById('urlOptions');
+            container.innerHTML = '';
+            
+            urlConfigs.forEach(config => {
+                const url = config.generateUrl(file, path);
+                const speedResult = speedResults[config.id] || {};
+                const speedClass = getSpeedClass(speedResult.speed);
+                const speedText = speedResult.speed ? `${speedResult.speed}ms` : '点击测速';
+                const speedIcon = getSpeedIcon(speedResult.speed);
+                
+                const option = document.createElement('div');
+                option.className = `url-option ${selectedUrlId === config.id ? 'selected' : ''}`;
+                option.id = `url-option-${config.id}`;
+                option.onclick = () => {
+                    selectUrlOption(config.id);
+                    // 点击节点时自动测速
+                    testNodeSpeed(config.id, url);
+                };
+                
+                option.innerHTML = `
+                    <input type="radio" name="url-option" ${selectedUrlId === config.id ? 'checked' : ''}>
+                    <div class="url-info">
+                        <div class="url-location">
+                            <i class="${config.icon}"></i> ${config.name} (${config.location})
+                        </div>
+                        <div class="url-address">${url}</div>
+                        <div class="speed-test ${speedClass}" id="speed-${config.id}">
+                            ${speedIcon}<span id="speed-text-${config.id}">${speedText}</span>
+                        </div>
+                    </div>
+                `;
+                
+                container.appendChild(option);
+            });
+            
+            // 显示节点URL
+            document.getElementById('hkNodeUrl').textContent = urlConfigs[1].generateUrl(file, path);
+            document.getElementById('usNodeUrl').textContent = urlConfigs[2].generateUrl(file, path);
+            
+            // 更新选中的链接显示
+            updateSelectedUrlDisplay(file, path);
+        }
+        
+        // 选择节点
+        function selectUrlOption(urlId) {
+            selectedUrlId = urlId;
+            
+            // 更新所有选项的选中状态
+            urlConfigs.forEach(config => {
+                const option = document.getElementById(`url-option-${config.id}`);
+                if (option) {
+                    option.classList.toggle('selected', config.id === urlId);
+                    const radio = option.querySelector('input[type="radio"]');
+                    if (radio) radio.checked = config.id === urlId;
+                }
+            });
+            
+            updateSelectedUrlDisplay(currentFile, currentPath);
+        }
+        
+        // 更新选中的链接显示
+        function updateSelectedUrlDisplay(file, path) {
+            const selectedConfig = urlConfigs.find(c => c.id === selectedUrlId);
+            if (selectedConfig) {
+                const selectedUrl = selectedConfig.generateUrl(file, path);
+                const speedResult = speedResults[selectedUrlId] || {};
+                
+                document.getElementById('selectedUrlBox').style.display = 'block';
+                document.getElementById('selectedUrlValue').textContent = selectedUrl;
+                
+                // 如果有测速结果，显示在标签中
+                let qrLabel = `扫描二维码访问${selectedConfig.name}`;
+                if (speedResult.speed) {
+                    const speedClass = getSpeedClass(speedResult.speed);
+                    const speedLabel = speedClass === 'fast' ? '快速' : speedClass === 'medium' ? '一般' : '较慢';
+                    qrLabel += ` (${speedLabel}: ${speedResult.speed}ms)`;
+                }
+                document.getElementById('qrcodeLabel').textContent = qrLabel;
+            }
+        }
+        
+        // 测速函数
+        async function testNodeSpeed(nodeId, url) {
+            const speedElement = document.getElementById(`speed-${nodeId}`);
+            const speedTextElement = document.getElementById(`speed-text-${nodeId}`);
+            
+            if (!speedElement || !speedTextElement) return;
+            
+            speedElement.className = 'speed-test running';
+            speedTextElement.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 测速中...';
+            
+            try {
+                const startTime = performance.now();
+                
+                // 创建一个随机参数避免缓存
+                const testUrl = `${url}&_t=${Date.now()}`;
+                
+                // 使用HEAD请求测试速度
+                const response = await fetch(testUrl, {
+                    method: 'HEAD',
+                    mode: 'no-cors',
+                    cache: 'no-cache'
+                });
+                
+                const endTime = performance.now();
+                const speed = Math.round(endTime - startTime);
+                
+                // 保存测速结果
+                speedResults[nodeId] = { speed, time: Date.now() };
+                
+                // 更新显示
+                const speedClass = getSpeedClass(speed);
+                speedElement.className = `speed-test ${speedClass}`;
+                speedTextElement.innerHTML = getSpeedIcon(speed) + speed + 'ms';
+                
+                // 如果当前选中的是这个节点，更新二维码标签
+                if (nodeId === selectedUrlId) {
+                    updateSelectedUrlDisplay(currentFile, currentPath);
+                }
+                
+                return speed;
+            } catch (error) {
+                console.error(`测速失败 ${nodeId}:`, error);
+                speedElement.className = 'speed-test slow';
+                speedTextElement.innerHTML = '<i class="fas fa-exclamation-triangle"></i> 测速失败';
+                speedResults[nodeId] = { speed: null, error: true };
+                return null;
+            }
+        }
+        
+        // 开始测速所有节点
+        async function startSpeedTestAll() {
+            if (!currentFile) return;
+            
+            document.getElementById('notificationText').textContent = '正在测速所有节点...';
+            showCopyNotification();
+            
+            for (const config of urlConfigs) {
+                const url = config.generateUrl(currentFile, currentPath);
+                await testNodeSpeed(config.id, url);
+                // 延迟一下避免请求过快
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+            
+            document.getElementById('notificationText').textContent = '测速完成！';
+            showCopyNotification();
+        }
+        
+        // 获取速度等级对应的CSS类
+        function getSpeedClass(speed) {
+            if (!speed) return '';
+            if (speed < 500) return 'fast';
+            if (speed < 2000) return 'medium';
+            return 'slow';
+        }
+        
+        // 获取速度图标
+        function getSpeedIcon(speed) {
+            if (!speed) return '';
+            if (speed < 500) return '<i class="fas fa-bolt"></i> ';
+            if (speed < 2000) return '<i class="fas fa-tachometer-alt"></i> ';
+            return '<i class="fas fa-exclamation-triangle"></i> ';
+        }
+        
+        // 生成二维码
+        function generateSelectedQRCode() {
+            if (!selectedUrlId) {
+                document.getElementById('notificationText').textContent = '请先选择一个节点！';
+                showCopyNotification();
+                return;
+            }
+            
+            const selectedConfig = urlConfigs.find(c => c.id === selectedUrlId);
+            if (!selectedConfig) return;
+            
+            const url = selectedConfig.generateUrl(currentFile, currentPath);
+            generateQRCode(url);
+            
+            document.getElementById('notificationText').textContent = `已生成${selectedConfig.name}的二维码`;
+            showCopyNotification();
+        }
+        
+        // 复制选中的链接
+        function copySelectedUrl() {
+            if (!selectedUrlId) {
+                document.getElementById('notificationText').textContent = '请先选择一个节点！';
+                showCopyNotification();
+                return;
+            }
+            
+            const selectedConfig = urlConfigs.find(c => c.id === selectedUrlId);
+            if (!selectedConfig) return;
+            
+            const url = selectedConfig.generateUrl(currentFile, currentPath);
+            navigator.clipboard.writeText(url)
+                .then(() => {
+                    document.getElementById('notificationText').textContent = `${selectedConfig.name}链接已复制到剪贴板！`;
+                    showCopyNotification();
+                })
+                .catch(err => {
+                    const textArea = document.createElement('textarea');
+                    textArea.value = url;
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    document.getElementById('notificationText').textContent = `${selectedConfig.name}链接已复制到剪贴板！`;
+                    showCopyNotification();
+                });
+        }
+        
+        // 复制GitHub链接
+        function copyGitHubUrl() {
+            const githubUrl = document.getElementById('githubPath').textContent;
+            if (!githubUrl || githubUrl === '正在生成链接...') return;
+            
+            navigator.clipboard.writeText(githubUrl)
+                .then(() => {
+                    document.getElementById('notificationText').textContent = 'GitHub链接已复制到剪贴板！';
+                    showCopyNotification();
+                })
+                .catch(err => {
+                    const textArea = document.createElement('textarea');
+                    textArea.value = githubUrl;
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    document.getElementById('notificationText').textContent = 'GitHub链接已复制到剪贴板！';
+                    showCopyNotification();
+                });
+        }
+        
+        // 下载二维码
+        function downloadQRCode() {
+            const qrCodeCanvas = document.querySelector('#qrcode canvas');
+            if (qrCodeCanvas) {
+                const selectedConfig = urlConfigs.find(c => c.id === selectedUrlId);
+                const fileName = currentFile ? currentFile.replace(/\.[^/.]+$/, "") : 'qrcode';
+                const link = document.createElement('a');
+                link.download = `${fileName}-${selectedConfig ? selectedConfig.name : 'qrcode'}.png`;
+                link.href = qrCodeCanvas.toDataURL('image/png');
+                link.click();
+            } else {
+                document.getElementById('notificationText').textContent = '请先生成二维码！';
+                showCopyNotification();
+            }
+        }
+        
+        // 预览相关函数
+        function addImagePreview(file, path) {
+            const previewArea = document.getElementById('previewArea');
+            previewArea.innerHTML = `
+                <div class="preview-section">
+                    <h3><i class="fas fa-image"></i> 图片预览</h3>
+                    <div class="preview-container">
+                        <img src="${getProxyUrl(file, path)}" alt="${file}" class="preview-image" onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"400\" height=\"300\"><rect width=\"100%\" height=\"100%\" fill=\"%23f0f0f0\"/><text x=\"50%\" y=\"50%\" text-anchor=\"middle\" dy=\".3em\" font-family=\"sans-serif\" font-size=\"16\" fill=\"%23999\"></text></svg>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function addVideoPreview(file, path) {
+            const previewArea = document.getElementById('previewArea');
+            previewArea.innerHTML = `
+                <div class="preview-section">
+                    <h3><i class="fas fa-video"></i> 视频预览</h3>
+                    <div class="preview-container">
+                        <video controls class="preview-video">
+                            <source src="${getProxyUrl(file, path)}" type="video/mp4">
+                            <source src="${getProxyUrl(file, path)}" type="video/webm">
+                            <source src="${getProxyUrl(file, path)}" type="video/ogg">
+                            您的浏览器不支持视频播放
+                        </video>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function addAudioPreview(file, path) {
+            const previewArea = document.getElementById('previewArea');
+            previewArea.innerHTML = `
+                <div class="preview-section">
+                    <h3><i class="fas fa-music"></i> 音频预览</h3>
+                    <div class="preview-container">
+                        <audio controls class="preview-audio">
+                            <source src="${getProxyUrl(file, path)}" type="audio/mpeg">
+                            <source src="${getProxyUrl(file, path)}" type="audio/wav">
+                            <source src="${getProxyUrl(file, path)}" type="audio/ogg">
+                            您的浏览器不支持音频播放
+                        </audio>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function addUnsupportedPreview() {
+            const previewArea = document.getElementById('previewArea');
+            previewArea.innerHTML = `
+                <div class="preview-section">
+                    <h3><i class="fas fa-eye"></i> 文件预览</h3>
+                    <div class="unsupported-preview">
+                        <i class="fas fa-file-alt"></i>
+                        <p>此文件类型不支持在线预览</p>
+                        <p style="font-size: 13px; color: #999; margin-top: 10px;">请下载文件后查看</p>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function checkFileTypeAndPreview(file, path) {
+            const fileName = file.toLowerCase();
+            const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp', '.svg'];
+            const videoExtensions = ['.mp4', '.webm', '.avi', '.mov', '.mkv', '.flv', '.m4v'];
+            const audioExtensions = ['.mp3', '.wav', '.ogg', '.flac', '.m4a', '.aac'];
+            
+            const isImage = imageExtensions.some(ext => fileName.endsWith(ext));
+            const isVideo = videoExtensions.some(ext => fileName.endsWith(ext));
+            const isAudio = audioExtensions.some(ext => fileName.endsWith(ext));
+            
+            if (isImage) {
+                addImagePreview(file, path);
+            } else if (isVideo) {
+                addVideoPreview(file, path);
+            } else if (isAudio) {
+                addAudioPreview(file, path);
+            } else {
+                addUnsupportedPreview();
+            }
+        }
+        
+        function showCopyNotification() {
+            const notification = document.getElementById('copyNotification');
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+        
+        // 生成二维码
+        function generateQRCode(url) {
+            const qrcodeElement = document.getElementById('qrcode');
+            
+            qrcodeElement.innerHTML = '';
+            
+            if (!url || url === '正在生成...' || url === '无') {
+                qrcodeElement.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-qrcode"></i>
+                        <p>无法生成二维码</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            try {
+                const qr = qrcode(0, 'M');
+                qr.addData(url);
+                qr.make();
+                
+                const canvas = document.createElement('canvas');
+                canvas.width = 200;
+                canvas.height = 200;
+                canvas.className = 'qr-canvas';
+                
+                const ctx = canvas.getContext('2d');
+                
+                const moduleCount = qr.getModuleCount();
+                const cellSize = 200 / (moduleCount + 8);
+                const offset = 4 * cellSize;
+                
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, 200, 200);
+                
+                ctx.fillStyle = '#111';
+                
+                for (let row = 0; row < moduleCount; row++) {
+                    for (let col = 0; col < moduleCount; col++) {
+                        if (qr.isDark(row, col)) {
+                            ctx.fillRect(
+                                offset + col * cellSize,
+                                offset + row * cellSize,
+                                cellSize,
+                                cellSize
+                            );
+                        }
+                    }
+                }
+                
+                qrcodeElement.appendChild(canvas);
+                
+            } catch (error) {
+                console.error('生成二维码失败:', error);
+                qrcodeElement.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <p>二维码生成失败</p>
+                    </div>
+                `;
+            }
+        }
+        
+        // 页面加载
+        document.addEventListener('DOMContentLoaded', function() {
+            const { file, path } = getUrlParams();
+            
+            if (!file) {
+                document.getElementById('fileName').textContent = '未指定文件';
+                document.getElementById('filePath').textContent = '无';
+                document.getElementById('fullPath').textContent = '无';
+                document.getElementById('githubPath').textContent = '无';
+                addUnsupportedPreview();
+                return;
+            }
+            
+            currentFile = file;
+            currentPath = path;
+            
+            document.getElementById('fileName').textContent = file;
+            
+            const filePath = path ? `${path}/${file}` : file;
+            document.getElementById('filePath').textContent = filePath;
+            document.getElementById('fullPath').textContent = filePath;
+            
+            const githubRawUrl = `https://raw.githubusercontent.com/annacom155/ccouo/main/${filePath}`;
+            document.getElementById('githubPath').textContent = githubRawUrl;
+            
+            checkFileTypeAndPreview(file, path);
+            
+            // 初始化节点选择
+            renderUrlOptions(file, path);
+            
+            // 自动测速
+            setTimeout(() => {
+                startSpeedTestAll();
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
