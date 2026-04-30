@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>本地链接转公网</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            max-width: 600px; 
+            margin: 50px auto; 
+            padding: 20px; 
+        }
+        input, button { 
+            padding: 10px; 
+            margin: 5px; 
+            width: 100%; 
+            box-sizing: border-box; 
+        }
+        button { 
+            background: #0070f3; 
+            color: white; 
+            border: none; 
+            cursor: pointer; 
+        }
+        .result { 
+            margin-top: 20px; 
+            padding: 15px; 
+            background: #f0f0f0; 
+            border-radius: 5px; 
+        }
+    </style>
+</head>
+<body>
+    <h1>🌐 本地链接转公网</h1>
+    
+    <div>
+        <input type="text" id="url" placeholder="http://localhost:3000" />
+        <button onclick="generate()">生成链接</button>
+    </div>
+    
+    <div id="loading" style="display:none;">生成中...</div>
+    
+    <div id="result" class="result" style="display:none;">
+        <h3>✅ 链接生成成功！</h3>
+        <p>公网链接：</p>
+        <input type="text" id="publicUrl" readonly />
+        <button onclick="copy()">复制链接</button>
+        <p><small>有效期：1小时</small></p>
+    </div>
+    
+    <script>
+    async function generate() {
+        const url = document.getElementById('url').value;
+        if (!url) {
+            alert('请输入URL');
+            return;
+        }
+        
+        document.getElementById('loading').style.display = 'block';
+        
+        try {
+            const res = await fetch('/api/kou', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url: url })
+            });
+            
+            const data = await res.json();
+            
+            if (data.success) {
+                document.getElementById('publicUrl').value = data.publicUrl;
+                document.getElementById('result').style.display = 'block';
+            } else {
+                alert('错误: ' + (data.error || '生成失败'));
+            }
+        } catch (error) {
+            alert('网络错误');
+        } finally {
+            document.getElementById('loading').style.display = 'none';
+        }
+    }
+    
+    function copy() {
+        const input = document.getElementById('publicUrl');
+        input.select();
+        document.execCommand('copy');
+        alert('已复制');
+    }
+    </script>
+</body>
+</html>
